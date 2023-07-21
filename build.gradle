@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id "org.hidetake.ssh" version "2.11.2"
 }
 
 group = 'org.slang'
@@ -17,15 +18,36 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+
+
 task copySlangTxt(type: Copy) {
     from 'src/main/java/org/slang/'
     include 'slang.txt', 'slang_default.txt'
     into "${buildDir}/libs"
 }
+
 jar {
     manifest {
         attributes 'Main-Class': 'org.slang.SlangDictionaryUI'
     }
 }
+
+task sendJarToServer(type: Exec) {
+    commandLine 'scp', '-r', 'build/libs', 'server@192.168.128.132:~/'
+}
+
+task copyJarToServer(type: Exec) {
+    def jarFilePath =  'build/libs'
+    def serverIP = "192.168.128.132"
+    def serverPort = "22"
+    def serverUsername = "server"
+    def serverPassword = "1"
+    def destinationDir = "~/"
+
+    commandLine "sshpass", "-p", serverPassword, "scp", "-P", serverPort, jarFilePath, "${serverUsername}@${serverIP}:${destinationDir}"
+}
+
 jar.dependsOn(copySlangTxt)
+sendJarToServer.dependsOn jar
 assemble.dependsOn(copySlangTxt)
